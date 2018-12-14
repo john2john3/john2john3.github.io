@@ -1,0 +1,285 @@
+var http = require('http');
+var fs = require('fs');
+var url = require('url');
+var qs = require('querystring');
+var mysql = require('mysql');
+var express = require('express');
+var app = express();
+var router = express.Router();
+var bodyParser = require('body-parser');
+var multer = require('multer');
+var upload = multer({ dest: 'uploads/' })
+var _storage = multer.diskStorage({
+destination: function (req, file, cb) {
+cb(null, 'uploads/')
+},
+filename: function (req, file, cb) {
+cb(null, file.originalname);
+}
+})
+var upload = multer({ storage: _storage });
+
+/*
+app.get('/upload', function(req, res){
+
+});
+app.post('/upload', upload.single('userfile'), function(req, res){
+console.log(req.file);
+res.send('Uploaded : '+req.file.filename);
+});
+*/
+var db = mysql.createConnection({
+host:'localhost',
+user:'root',
+password:'ghwls98',
+database:'clients'
+})
+db.connect();
+
+
+function templateHTML(title, body, control){
+return `
+<!doctype html>
+<html>
+<head>
+    <title>${title}</title>
+    <meta charset="utf-8">
+</head>
+<body>
+${body}
+${control}
+</body>
+</html>
+`;
+}
+var app = http.createServer(function(request,response){
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var pathname = url.parse(_url, true).pathname;
+if(pathname === '/'){
+var title = 'Welcome';
+var description = 'Hello, Node.js';
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<form action="/usercheck" method="post">
+
+    <div>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="user_name" />
+    </div>
+
+    <div class="button">
+        <button type="submit">Send your message</button>
+    </div>
+</form>`
+);
+response.writeHead(200);
+response.end(template);
+
+}
+else if(pathname ==='/usercheck')//아이디 입력 admin 추가
+{
+var body = '';
+request.on('data', function(data){
+body = body + data;
+});
+request.on('end', function(){
+var post = qs.parse(body);
+var user_name = post.user_name;
+db.query(`SELECT * FROM clients WHERE name=?`,[user_name], function(error,row){
+if(error) {throw error;
+}
+if(row[0]===undefined){
+response.writeHead(302, {Location: `/createid?id=${user_name}`});
+response.end();
+}
+else{
+response.writeHead(302, {Location: `/home?id=${user_name}`});
+response.end();
+}
+});
+});
+}
+else if(pathname ==='/createid'){//아이디없으면 만들기 id 만들어서 insert하기
+var title = 'Nice to meet you';
+var description = 'Register your information';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description} ${queryData.id}`,
+`<form action="/userregister?id=${queryData.id}" method="post">
+
+    <div>
+        <label for="job"> JOB:</label>
+        <input type="text" id="job" name="user_job" />
+    </div>
+    <div class="button">
+        <button type="submit">Send your message</button>
+    </div>
+</form>`
+);
+response.writeHead(200);
+response.end(template);
+}
+else if(pathname ==='/userregister')
+{
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var body = '';
+request.on('data', function(data){
+body = body + data;
+});
+request.on('end', function(){
+var post = qs.parse(body);
+var uj = post.user_job;
+db.query(`SELECT * FROM clients WHERE name=?`,[queryData.id], function(error1,row){
+if(error1) {throw error1;
+}
+if(row[0]===undefined){
+db.query('INSERT INTO clients (name, job) VALUES (?,?)',[queryData.id, uj], function(error,result){
+if(error) {
+throw error;
+}
+else{
+response.writeHead(302, {Location: `/home?id=${queryData.id}`});
+response.end();
+}
+});
+}
+else{
+response.writeHead(302, {Location: `/home?id=${queryData.id}`});
+response.end();
+}
+});
+
+});
+}
+
+else if(pathname === '/home'){//아이디있으면 인터페이스 개 보기, 넣기
+var title = 'Welcome';
+var description = 'What to do?';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<a href="/dogregister?id=${queryData.id}">register new dogs</a>
+<a href="/showdog?id=${queryData.id}">see your dogs</a>`
+);
+response.writeHead(200);
+response.end(template);
+}
+else if(pathname === '/dogregister'){
+var title = 'Register new dog';
+var description = 'Insert the data';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<a href="/home?id=${queryData.id}">back to home </a>
+<div>
+    <form action="/updating?id=${queryData.id}" method="post">
+        <div>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="dog_name" />
+        </div>
+        <div>
+            <label for="iris">Iris:</label>
+            <input type="int" id="code" maxlength="10" name="dcode" />
+        </div>
+        <div>
+            <label for="birthday">Birthday:</label>
+            <input type="int" id="birth" maxlength="8" name="birth" />
+        </div>
+
+        <input type="submit">
+    </form>
+
+    <input type="file" value="파일 선택" name="file"/></td>
+</div>`
+);
+response.writeHead(200);
+response.end(template);
+}
+else if(pathname === '/updating'){
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var body = '';
+request.on('data', function(data){
+body = body + data;
+});
+request.on('end', function(){
+var post = qs.parse(body);
+var dn = post.dog_name;
+var dc = post.dcode;
+var birth = post.birth;
+
+db.query(`SELECT * FROM doggy WHERE dcode=?`,[dc], function(error1,row){
+if(error1) {throw error1;
+}
+if(row[0]===undefined){
+db.query('INSERT INTO doggy (dname, dcode, registered, birthday, owner) VALUES (?,?,NOW(),?,?)',[dn, dc, birth, queryData.id], function(error,result){
+if(error) {
+throw error;
+}
+else{
+response.writeHead(302, {Location: `/success?id=${queryData.id}`});
+response.end();
+}
+});
+}
+else{
+response.writeHead(302, {Location: `/fail?id=${queryData.id}`});
+response.end();
+}
+});
+});
+}
+else if(pathname === '/fail'){
+var title = 'Fail';
+var description = 'You already registered this dog';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<a href="/home?id=${queryData.id}">back to home </a>`
+);
+response.writeHead(200);
+response.end(template);
+}
+else if(pathname === '/success'){
+var title = 'Register Success';
+var description = 'You registered your dog';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<a href="/home?id=${queryData.id}">back to home </a>`
+);
+response.writeHead(200);
+response.end(template);
+}
+else if(pathname === '/showdog'){
+var title = 'Welcome';
+var description = 'What to do?';
+var _url = request.url;
+var queryData = url.parse(_url, true).query;
+var template = templateHTML(title,
+`<h2>${title}</h2>${description}`,
+`<a href="/home?id=${queryData.id}">back to home </a>`
+);
+response.writeHead(200);
+response.end(template);
+}
+}
+);
+/*var body = '';
+request.on('data', function(data){
+body = body + data;
+});
+request.on('end', function(){
+var post = qs.parse(body);
+var user_name = post.user_name;
+consol.log(user_name);
+}
+*/
+app.listen(3000);
