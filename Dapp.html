@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>강아지 DAPP</title>
+</head>
+<body>
+
+    <h1> BlockDog</h1>
+    <p> Dapp for Dogs</p>
+    <p> 강아지 검색!!</p>
+    <form>
+    강아지 정보 : <input id='dogdata' type='text'/> <button onclick ="searchDog()">강아지 검색하기</button> <span id ='searchedDog'></span><br><br>
+    <p> 강아지 등록 </p>
+    강아지 정보 : <input id='dogdata_' type='text'/> 사용자 ID:<input id='userid' type='text'/> password:<input id='pwd' type='password'/> <button onclick ="registerDog()">강아지 등록하기</button><span id ='regiDog'></span><br><br>
+    <p> 강아지 주인 바꾸기</p>
+    강아지 정보: <input id='dogdata__' type='text'/> 사용자 ID:<input id='userid_' type='text'/> password:<input id='pwd_' type='password'/> 새 주인 ID:<input id='receiver' type='text'/> <button onclick ="transfer()">강아지 주인 바꾸기</button><span id ='transferDog'></span><br><br>
+    <button onclick = "refresh()">새로고침</button>
+    </form>
+</body>
+
+<script src="https://cdn.rawgit.com/ethereum/web3.js/develop/dist/web3.js"></script>
+
+<script>
+    var contractAddress= 0x93cC54f3D555f6E54c471A38102F95b191B36944;
+    var abi = [
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "dogdata",
+                    "type": "uint256"
+                },
+                {
+                    "name": "Id",
+                    "type": "uint256"
+                }
+            ],
+            "name": "registerDog",
+            "outputs": [],
+            "payable": false,
+            "type": "function",
+            "stateMutability": "nonpayable"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "dogdata",
+                    "type": "uint256"
+                },
+                {
+                    "name": "sender",
+                    "type": "uint256"
+                },
+                {
+                    "name": "receiver",
+                    "type": "uint256"
+                }
+            ],
+            "name": "transfer",
+            "outputs": [],
+            "payable": false,
+            "type": "function",
+            "stateMutability": "nonpayable"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "dogdata",
+                    "type": "uint256"
+                }
+            ],
+            "name": "getId",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "payable": false,
+            "type": "function",
+            "stateMutability": "view"
+        }
+    ];
+    var dogDappContract;
+    var dogDapp;
+
+    window.addEventListener('load', function() {
+
+        // Checking if Web3 has been injected by the browser (Mist/MetaMask)
+        if (typeof web3 !== 'undefined') {
+            // Use Mist/MetaMask's provider
+            window.web3 = new Web3(web3.currentProvider);
+        } else {
+            console.log('No web3? You should consider trying MetaMask!')
+            // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
+            window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+        }
+        // Now you can start your app & access web3 freely:
+        startApp();
+    });
+
+    function startApp() {
+        dogDappContract = web3.eth.contract(abi);
+        dogDapp = dogDappContract.at(contractAddress);
+        document.getElementById('contractAddr').innerHTML = getLink(contractAddress);
+        web3.eth.getAccounts(function (e, r) {
+            document.getElementById('accountAddr').innerHTML = getLink(r[0]);
+        });
+    }
+
+    function refresh(){
+        window.location.reload()
+    }
+
+    function searchDog(){
+
+        var dogdata = document.getElementById('dogdata').value;
+        dogDapp.getId(dogdata, function(e,r){
+            var searchedDog = r;
+            document.getElementById('searchedDog').innerHTML = searchedDog;
+        });
+    }
+
+    function registerDog(){
+
+        var dogdata_ = document.getElementById('dogdata_').value;
+        var userid = document.getElementById('userid').value;
+        dogDapp.registerDog(dogdata_,userid,function(e,r){
+            document.getElementById('regiDog').innerHTML = '등록됐습니다.';
+        });
+    }
+
+    function transfer(){
+
+        var dogdata__ = document.getElementById('dogdata__').value;
+        var sender = document.getElementById('userid_').value;
+        var receiver = document.getElementById('receiver').value;
+        dogDapp.transfer(dogdata__,sender,receiver,function(e,r){
+            document.getElementById('transferDog').innerHTML = '새로운 주인으로 등록됐습니다.';
+        });
+
+    }
+
+</script>
+</html>
