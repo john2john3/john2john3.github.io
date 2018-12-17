@@ -116,7 +116,7 @@
     function getLink(addr) {
         return '<a target="_blank" href=https://testnet.etherscan.io/address/' + addr + '>' + addr +'</a>';
     }
-    
+
     function refresh(){
         window.location.reload()
     }
@@ -125,8 +125,8 @@
 
         var dogdata = document.getElementById('dogdata').value;
         dogDapp.getId(dogdata, function(e,r){
-            var searchedDog = r;
-            document.getElementById('searchedDog').innerHTML = searchedDog;
+
+            document.getElementById('searchedDog').innerHTML = r.toNumber();
         });
     }
 
