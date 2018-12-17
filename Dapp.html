@@ -133,10 +133,11 @@
     }
 
     function registerDog(){
-        document.getElementById("regiDog").innerHTML = '등록됐습니다.';
         var dogdata_ = document.getElementById("dogdata_").value;
         var userid = document.getElementById("userid").value;
-        dogDapp.registerDog(dogdata_,userid);
+        dogDapp.registerDog(dogdata_,userid,function(e,r){
+            document.getElementById("regiDog").innerHTML = '등록됐습니다.';
+        });
 
     }
 
