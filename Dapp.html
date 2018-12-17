@@ -136,18 +136,8 @@
         document.getElementById("regiDog").innerHTML = '등록됐습니다.';
         var dogdata_ = document.getElementById("dogdata_").value;
         var userid = document.getElementById("userid").value;
-        var txid;
         dogDapp.registerDog(dogdata_,userid);
 
-
-        var filter = web3.eth.filter('latest');
-        filter.watch(function(e, r) {
-            web3.eth.getTransaction(txid, function(e,r){
-                if (r != null && r.blockNumber > 0) {
-                    filter.stopWatching();
-                }
-            });
-        });
     }
 
 
